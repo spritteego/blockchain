@@ -17,7 +17,7 @@ class BlockchainTestCase(TestCase):
         self.blockchain.new_transaction(
             sender=sender,
             recipient=recipient,
-            amount=amount
+            msg=amount
         )
 
 
