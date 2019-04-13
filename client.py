@@ -1,7 +1,10 @@
 from socket import *
 import threading,sys,json,re
 import requests
-from blockchain import *
+import time
+import os
+
+
 HOST = '127.0.0.1'  ##
 PORT=8022
 BUFSIZE = 1024  ##缓冲区大小  1K
@@ -94,6 +97,7 @@ def chat(target):
             break
         else:
             print('发送数据失败!')
+
 class inputdata(threading.Thread):
     def run(self):
         menu = """
@@ -108,7 +112,7 @@ class inputdata(threading.Thread):
                         """
         print(menu)
         while True:
-            operation = input('请输入数字[1-6]: ')
+            operation = input('请输入数字[1-8]: ')
             if operation in '1':
                 target = input('请输入你要聊天的对象: ')
                 chat(target)
@@ -136,16 +140,35 @@ class inputdata(threading.Thread):
                 tcpCliSock.send(dataObj.encode('utf-8'))
                 continue
             if operation in '5':
-                reply=requests.get(url='http://193.112.48.17:5000/')
+                a=requests.get(url='http://193.112.48.17:5000/mine')
+                reply=a.json()
+
                 print('已成功挖矿！矿机返回数据如下：')
                 print('第{}个区块被创建！\n区块哈希：{}\n矿币哈希为：{}'
                       .format(reply["index"],reply["previous_hash"],reply["transactions"][0]["recipient"]))
                 continue
-
+            if operation in '6':
+                os.popen("python blockchain.py")
+                submit={"nodes":str(ip)}
+                requests.post("http://193.112.48.17:5000/nodes/register",json=submit)
+                print("开启节点成功，已添加至节点网络")
+                time.sleep(2)
+                continue
+            if operation in '7':
+                a=requests.get('http://193.112.48.17:5000/chain')
+                chain=a.json()
+                print('目前区块链长度为{}'.format(chain["length"]))
+                for block in chain["chain"]:
+                    print("第{}个区块,创建于{}"
+                          .format(block["index"],time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(block["timestamp"]))))
+                    print("     区块哈希：{}".format(block["previous_hash"]))
+                # print(chain)
+                continue
             if operation in '8':
                 tcpCliSock.close()
                 sys.exit(1)
             else:
+
                 print('没有该选项，请重新输入!')
 
 class getdata(threading.Thread):
@@ -204,4 +227,9 @@ def main():
 
 
 if __name__ == '__main__':
+    global ip
+    # 获取本机计算机名称
+    hostname = gethostname()
+    # 获取本机ip
+    ip = gethostbyname(hostname)
     main()
